@@ -46,6 +46,41 @@ with tab3:
     
     if st.button("Save Machinery Log"):
         st.write(f"Logged {fuel_added}L for {vehicle} at {odometer} mark.")
+# --- NEW SECTION: FIELD MAINTENANCE ---
+with tab2:
+    st.header("Field Maintenance Log")
+    
+    # Selection of the Block being worked on
+    target_block = st.text_input("Block Number", placeholder="e.g., kym025")
+    
+    # Maintenance Category
+    maint_type = st.selectbox("Maintenance Task", [
+        "Manual Weeding", 
+        "Ox-Plough Weeding", 
+        "Herbicide Spraying", 
+        "Fertilizer Application",
+        "Stubble Shaving"
+    ])
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        date_done = st.date_input("Date of Task")
+    with col2:
+        man_power = st.number_input("Number of People/Oxen", min_value=1)
+
+    # Specifics for Spraying
+    if maint_type == "Herbicide Spraying":
+        chemical = st.text_input("Chemical Name (e.g., 2,4-D, Glyphosate)")
+        knapsacks = st.number_input("Number of Knapsacks used", min_value=1)
+        st.caption(f"Tracking {chemical} application for {target_block}")
+
+    # Specifics for Ox-Plough
+    if maint_type == "Ox-Plough Weeding":
+        ox_pairs = st.number_input("Number of Oxen Pairs", min_value=1)
+        contractor = st.text_input("Ox-Plough Contractor")
+
+    if st.button("Save Maintenance Record"):
+        st.success(f"Successfully logged {maint_type} for Block {target_block}")
 
 st.divider()
 st.caption(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
