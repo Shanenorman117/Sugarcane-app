@@ -84,9 +84,12 @@ with st.form("main_form", clear_on_submit=True):
 
             try:
                 # Read existing data and append
-                df = conn.read(worksheet="Sheet1")
+                        try:
+                df = conn.read()
                 updated_df = pd.concat([df, new_entry], ignore_index=True)
-                conn.update(worksheet="Sheet1", data=updated_df)
+                conn.update(data=updated_df)
+
+                
                 st.success(f"Record for {block} uploaded successfully!")
             except Exception as e:
                 st.error(f"Error: {e}")
