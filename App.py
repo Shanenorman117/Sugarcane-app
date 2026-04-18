@@ -1,4 +1,3 @@
-
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
@@ -84,12 +83,9 @@ with st.form("main_form", clear_on_submit=True):
 
             try:
                 # Read existing data and append
-                        try:
-                df = conn.read()
+                df = conn.read(worksheet="Sheet1")
                 updated_df = pd.concat([df, new_entry], ignore_index=True)
-                conn.update(data=updated_df)
-
-                
+                conn.update(worksheet="Sheet1", data=updated_df)
                 st.success(f"Record for {block} uploaded successfully!")
             except Exception as e:
                 st.error(f"Error: {e}")
