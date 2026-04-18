@@ -1,86 +1,61 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 
-# Page Configuration for Mobile
-st.set_page_config(page_title="Estate Supervisor Pro", layout="centered")
+# Page setup for the Samsung Galaxy screen
+st.set_page_config(page_title="Estate Manager", layout="centered")
+st.title("🚜 Sugarcane Field Manager")
 
-st.title("🚜 Estate Supervisor Dashboard")
-st.subheader("Masindi & Kiryandongo Operations")
+# Establish Google Sheets Connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- TAB NAVIGATION ---
-tab1, tab2, tab3 = st.tabs(["Land Status", "Labor Log", "Machinery"])
+tab1, tab2 = st.tabs(["Log Task", "View History"])
 
-# --- TAB 1: LAND STATUS ---
 with tab1:
-    st.header("Sugarcane Block Tracking")
-    block_no = st.text_input("Block Number (e.g., kym025)")
-    variety = st.selectbox("Variety", ["SSP", "CO945", "R858", "FR95 2345"])
-    status = st.select_slider("Operation Status", 
-                             options=["Ploughed", "1st Ratoon", "2nd Ratoon", "Harvested"])
-    
-    if st.button("Update Block Status"):
-        st.success(f"Block {block_no} updated to {status} ({variety})")
-        # In a real app, this would save to a database.
+    st.subheader("Record Field Maintenance")
+    with st.form("entry_form"):
+        date_done = st.date_input("Date", datetime.now())
+        block = st.text_input("Block No (e.g., kym025)")
+        
+        # Specific tasks for your agriculture work
+        task = st.selectbox("Task", [
+            "Manual Weeding", 
+            "Ox-Plough Weeding", 
+            "Herbicide Spraying", 
+            "Stubble Shaving",
+            "Fertilizer Application"
+        ])
+        
+        contractor = st.text_input("Contractor/Driver Name")
+        details = st.text_area("Details (e.g. Chemical name, No. of Oxen)")
+        
+        submit = st.form_submit_button("Save to Google Sheets")
+        
+        if submit:
+            # Create a data row
+            new_row = pd.DataFrame([{
+                "Date": str(date_done),
+                "Block": block,
+                "Task": task,
+                "Contractor": contractor,
+                "Details": details
+            }])
+            
+            # Pull current data, add new row, and upload
+            try:
+                existing_data = conn.read(ttl=0)
+                updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                conn.update(data=updated_df)
+                st.success(f"✅ Successfully logged {task} for {block}!")
+            except Exception as e:
+                st.error("Make sure your Google Sheet 'Share' is set to 'Anyone with the link can Edit'")
 
-# --- TAB 2: LABOR & PAYROLL ---
 with tab2:
-    st.header("Labor Report")
-    contractor = st.selectbox("Contractor", ["Mujuni", "Etyanga Daniel", "Oyet Alfred", "Byaruhanga Ernest"])
-    work_type = st.selectbox("Task", ["Weeding", "Stubble Shaving", "Ploughing", "Planting"])
-    rate = st.number_input("Rate per Ha (UGX)", value=50000)
-    ha_done = st.number_input("Hectares Completed", step=0.1)
-    
-    total_pay = rate * ha_done
-    st.metric("Total Payment Due", f"{total_pay:,.0f} UGX")
-    
-    if st.button("Log Labor Payment"):
-        st.info(f"Payment logged for {contractor}")
-
-# --- TAB 3: MACHINERY ---
-with tab3:
-    st.header("Fleet & Fuel")
-    vehicle = st.selectbox("Vehicle", ["FAW Truck", "Sinotruk NX371", "Bajaj BM 100"])
-    fuel_added = st.number_input("Fuel Added (Liters)")
-    odometer = st.number_input("Current Odometer/Hours")
-    
-    if st.button("Save Machinery Log"):
-        st.write(f"Logged {fuel_added}L for {vehicle} at {odometer} mark.")
-# --- NEW SECTION: FIELD MAINTENANCE ---
-with tab2:
-    st.header("Field Maintenance Log")
-    
-    # Selection of the Block being worked on
-    target_block = st.text_input("Block Number", placeholder="e.g., kym025")
-    
-    # Maintenance Category
-    maint_type = st.selectbox("Maintenance Task", [
-        "Manual Weeding", 
-        "Ox-Plough Weeding", 
-        "Herbicide Spraying", 
-        "Fertilizer Application",
-        "Stubble Shaving"
-    ])
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        date_done = st.date_input("Date of Task")
-    with col2:
-        man_power = st.number_input("Number of People/Oxen", min_value=1)
-
-    # Specifics for Spraying
-    if maint_type == "Herbicide Spraying":
-        chemical = st.text_input("Chemical Name (e.g., 2,4-D, Glyphosate)")
-        knapsacks = st.number_input("Number of Knapsacks used", min_value=1)
-        st.caption(f"Tracking {chemical} application for {target_block}")
-
-    # Specifics for Ox-Plough
-    if maint_type == "Ox-Plough Weeding":
-        ox_pairs = st.number_input("Number of Oxen Pairs", min_value=1)
-        contractor = st.text_input("Ox-Plough Contractor")
-
-    if st.button("Save Maintenance Record"):
-        st.success(f"Successfully logged {maint_type} for Block {target_block}")
-
-st.divider()
-st.caption(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.subheader("Recent Records from your Sheet")
+    try:
+        # Pulls the data you just saved
+        data = conn.read(ttl="1m")
+        st.dataframe(data.tail(10), use_container_width=True)
+    except:
+        st.info("No data found yet. Log your first task in the other tab!")
