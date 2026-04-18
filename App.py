@@ -24,7 +24,6 @@ with st.form("main_form", clear_on_submit=True):
 
     # Section 2: Land Preparation (Specific Stages)
     st.subheader("🏗️ Land Preparation Section")
-    st.write("Enter the area (Ha) completed for specific prep stages:")
     lp_col1, lp_col2 = st.columns(2)
     with lp_col1:
         p1 = st.number_input("1st Plough (Ha)", min_value=0.0)
@@ -82,10 +81,16 @@ with st.form("main_form", clear_on_submit=True):
             }])
 
             try:
+                # Use the URL from your Secrets to find the sheet
+                sheet_url = st.secrets["public_gsheets_url"]
+                
                 # Read existing data and append
-                df = conn.read(worksheet="Sheet1")
+                df = conn.read(spreadsheet=sheet_url)
                 updated_df = pd.concat([df, new_entry], ignore_index=True)
-                conn.update(worksheet="Sheet1", data=updated_df)
+                
+                # Save it back to Google
+                conn.update(spreadsheet=sheet_url, data=updated_df)
+                
                 st.success(f"Record for {block} uploaded successfully!")
             except Exception as e:
                 st.error(f"Error: {e}")
